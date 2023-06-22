@@ -3,12 +3,14 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import sinon from "sinon";
-import { ItemType, MAX_INT } from "../constants";
-import { TestERC1155, TestERC721 } from "../typechain";
-import { CreateOrderInput, CurrencyItem } from "../types";
-import * as fulfill from "../utils/fulfill";
+import { ItemType, MAX_INT } from "../src/constants";
+import { TestERC1155, TestERC721 } from "../src/typechain-types";
+import { CreateOrderInput, CurrencyItem } from "../src/types";
+import * as fulfill from "../src/utils/fulfill";
+import { getTagFromDomain } from "../src/utils/usecase";
 import { describeWithFixture } from "./utils/setup";
+
+const sinon = require("sinon");
 
 describeWithFixture(
   "As a user I want to buy multiple listings or accept multiple offers",
@@ -20,7 +22,7 @@ describeWithFixture(
     let firstStandardCreateOrderInput: CreateOrderInput;
     let secondStandardCreateOrderInput: CreateOrderInput;
     let thirdStandardCreateOrderInput: CreateOrderInput;
-    let fulfillAvailableOrdersSpy: sinon.SinonSpy;
+    let fulfillAvailableOrdersSpy: sinon.SinonSpy; // eslint-disable-line no-undef
     let secondTestErc721: TestERC721;
     let secondTestErc1155: TestERC1155;
 
@@ -50,8 +52,8 @@ describeWithFixture(
       fulfillAvailableOrdersSpy.restore();
     });
 
-    describe("Multiple ERC721s are to be transferred from separate orders", async () => {
-      describe("[Buy now] I want to buy three ERC721 listings", async () => {
+    describe("Multiple ERC721s are to be transferred from separate orders", () => {
+      describe("[Buy now] I want to buy three ERC721 listings", () => {
         beforeEach(async () => {
           const { testErc721 } = fixture;
 
@@ -178,7 +180,7 @@ describeWithFixture(
         });
 
         describe("with ERC20", () => {
-          beforeEach(async () => {
+          beforeEach(() => {
             const { testErc20 } = fixture;
 
             // Use ERC20 instead of eth
@@ -236,6 +238,14 @@ describeWithFixture(
             );
 
             const thirdOrder = await thirdOrderUseCase.executeAllActions();
+
+            await expect(
+              seaport.fulfillOrders({
+                fulfillOrderDetails: [
+                  { order: { ...firstOrder, signature: "" } },
+                ],
+              })
+            ).to.be.rejectedWith("All orders must include signatures");
 
             const { actions } = await seaport.fulfillOrders({
               fulfillOrderDetails: [
@@ -296,7 +306,7 @@ describeWithFixture(
         });
       });
 
-      describe("[Accept offer] I want to accept three ERC721 offers", async () => {
+      describe("[Accept offer] I want to accept three ERC721 offers", () => {
         beforeEach(async () => {
           const { testErc721, testErc20 } = fixture;
 
@@ -494,8 +504,8 @@ describeWithFixture(
       });
     });
 
-    describe("Multiple ERC1155s are to be transferred from separate orders", async () => {
-      describe("[Buy now] I want to buy three ERC1155 listings", async () => {
+    describe("Multiple ERC1155s are to be transferred from separate orders", () => {
+      describe("[Buy now] I want to buy three ERC1155 listings", () => {
         beforeEach(async () => {
           const { testErc1155 } = fixture;
 
@@ -628,7 +638,7 @@ describeWithFixture(
         });
 
         describe("with ERC20", () => {
-          beforeEach(async () => {
+          beforeEach(() => {
             const { testErc20 } = fixture;
 
             // Use ERC20 instead of eth
@@ -745,7 +755,7 @@ describeWithFixture(
         });
       });
 
-      describe("[Accept offer] I want to accept three ERC1155 offers", async () => {
+      describe("[Accept offer] I want to accept three ERC1155 offers", () => {
         beforeEach(async () => {
           const { testErc1155, testErc20 } = fixture;
 
@@ -849,7 +859,8 @@ describeWithFixture(
               { order: thirdOrder },
             ],
             accountAddress: fulfiller.address,
-            domain: OPENSEA_DOMAIN,
+            // When domain is empty or undefined, it should not append any tag to the calldata.
+            domain: undefined,
           });
 
           const approvalAction = actions[0];
@@ -919,15 +930,18 @@ describeWithFixture(
             transactionMethods: fulfillAction.transactionMethods,
           });
 
-          expect(
-            (
-              await fulfillAction.transactionMethods.buildTransaction()
-            ).data?.slice(-8)
-          ).to.eq(OPENSEA_TAG);
+          // When domain is empty or undefined, it should not append any tag to the calldata.
+          const emptyDomainTag = getTagFromDomain("");
+          const dataForBuildTransaction = (
+            await fulfillAction.transactionMethods.buildTransaction()
+          ).data?.slice(-8);
+          expect(dataForBuildTransaction).to.not.eq(emptyDomainTag);
+          expect(dataForBuildTransaction).to.not.eq(OPENSEA_TAG);
 
           const transaction = await fulfillAction.transactionMethods.transact();
 
-          expect(transaction.data.slice(-8)).to.eq(OPENSEA_TAG);
+          expect(transaction.data.slice(-8)).to.not.eq(emptyDomainTag);
+          expect(transaction.data.slice(-8)).to.not.eq(OPENSEA_TAG);
 
           const balances = await Promise.all([
             testErc1155.balanceOf(offerer.address, nftId),

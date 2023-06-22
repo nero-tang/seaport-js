@@ -1,9 +1,8 @@
 import { expect } from "chai";
-import { formatBytes32String } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { ItemType, MAX_INT, NO_CONDUIT, OrderType } from "../constants";
-import { ConsiderationItem, OfferItem } from "../types";
-import { generateRandomSalt } from "../utils/order";
+import { ItemType, MAX_INT, NO_CONDUIT, OrderType } from "../src/constants";
+import { ConsiderationItem, OfferItem } from "../src/types";
+import { generateRandomSalt } from "../src/utils/order";
 import { describeWithFixture } from "./utils/setup";
 
 describeWithFixture("As a user I want to sign an order", (fixture) => {
@@ -47,7 +46,7 @@ describeWithFixture("As a user I want to sign an order", (fixture) => {
 
     const counter = await seaportContract.getCounter(offerer.address);
 
-    const orderParameters = {
+    const orderComponents = {
       offerer: offerer.address,
       zone: ethers.constants.AddressZero,
       offer,
@@ -57,19 +56,17 @@ describeWithFixture("As a user I want to sign an order", (fixture) => {
       salt,
       startTime,
       endTime,
-      zoneHash: formatBytes32String(counter.toString()),
+      zoneHash: ethers.constants.HashZero,
       conduitKey: NO_CONDUIT,
+      counter,
     };
 
-    const signature = await seaport.signOrder(
-      orderParameters,
-      counter.toNumber()
-    );
+    const signature = await seaport.signOrder(orderComponents);
 
     const order = {
       parameters: {
-        ...orderParameters,
-        totalOriginalConsiderationItems: orderParameters.consideration.length,
+        ...orderComponents,
+        totalOriginalConsiderationItems: orderComponents.consideration.length,
       },
       signature,
     };

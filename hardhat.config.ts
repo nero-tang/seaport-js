@@ -1,14 +1,14 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
-import "hardhat-gas-reporter";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-waffle";
 import "solidity-coverage";
 
 dotenv.config();
 
-// Go to https://hardhat.org/config/ to learn more
+// Go to https://hardhat.org/config to learn more
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -30,15 +30,6 @@ const config: HardhatUserConfig = {
           },
         },
       },
-      {
-        version: "0.4.23",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
     ],
   },
   networks: {
@@ -47,16 +38,12 @@ const config: HardhatUserConfig = {
       chainId: 1,
     },
   },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
-  },
   typechain: {
-    outDir: "src/typechain",
+    outDir: "src/typechain-types",
     target: "ethers-v5",
   },
   paths: {
-    tests: "src/__tests__",
+    tests: "test",
     artifacts: "src/artifacts",
     sources: "src/contracts",
   },

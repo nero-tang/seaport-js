@@ -8,22 +8,22 @@ module.exports = {
   ignorePatterns: ["lib"],
   plugins: ["@typescript-eslint", "import"],
   extends: [
-    "standard",
-    "plugin:prettier/recommended",
     "eslint:recommended",
+    "plugin:prettier/recommended",
     "plugin:import/typescript",
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaVersion: 12,
+    project: ["tsconfig.json"],
   },
   rules: {
-    "n/no-unsupported-features/es-syntax": ["error", { ignores: ["modules"] }],
     "no-unused-expressions": "off",
     "@typescript-eslint/no-unused-vars": [
       "error",
       { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
     ],
+    "@typescript-eslint/require-await": "error",
     "object-shorthand": ["error", "always"],
   },
 };

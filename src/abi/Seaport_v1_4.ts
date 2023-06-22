@@ -1,4 +1,4 @@
-const SeaportABI = [
+const SeaportABIv14 = [
   {
     inputs: [
       {
@@ -59,7 +59,17 @@ const SeaportABI = [
   },
   {
     inputs: [],
+    name: "CannotCancelOrder",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "ConsiderationCriteriaResolverOutOfRange",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ConsiderationLengthNotEqualToTotalOriginal",
     type: "error",
   },
   {
@@ -147,6 +157,11 @@ const SeaportABI = [
   },
   {
     inputs: [],
+    name: "Invalid1155BatchTransferEncoding",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "InvalidBasicOrderParameterEncoding",
     type: "error",
   },
@@ -159,11 +174,6 @@ const SeaportABI = [
       },
     ],
     name: "InvalidCallToConduit",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "InvalidCanceller",
     type: "error",
   },
   {
@@ -183,7 +193,24 @@ const SeaportABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "orderHash",
+        type: "bytes32",
+      },
+    ],
+    name: "InvalidContractOrder",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
     name: "InvalidERC721TransferAmount",
     type: "error",
   },
@@ -201,6 +228,11 @@ const SeaportABI = [
       },
     ],
     name: "InvalidMsgValue",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidNativeOfferItem",
     type: "error",
   },
   {
@@ -230,12 +262,29 @@ const SeaportABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+    ],
     name: "InvalidTime",
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "fulfillmentIndex",
+        type: "uint256",
+      },
+    ],
     name: "MismatchedFulfillmentOfferAndConsiderationComponents",
     type: "error",
   },
@@ -303,7 +352,13 @@ const SeaportABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "enum Side",
+        name: "side",
+        type: "uint8",
+      },
+    ],
     name: "OrderCriteriaResolverOutOfRange",
     type: "error",
   },
@@ -366,13 +421,40 @@ const SeaportABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "orderIndex",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "considerationIndex",
+        type: "uint256",
+      },
+    ],
     name: "UnresolvedConsiderationCriteria",
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "orderIndex",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "offerIndex",
+        type: "uint256",
+      },
+    ],
     name: "UnresolvedOfferCriteria",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "UnusedItemParameters",
     type: "error",
   },
   {
@@ -521,19 +603,142 @@ const SeaportABI = [
         type: "bytes32",
       },
       {
-        indexed: true,
-        internalType: "address",
-        name: "offerer",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "zone",
-        type: "address",
+        components: [
+          {
+            internalType: "address",
+            name: "offerer",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "zone",
+            type: "address",
+          },
+          {
+            components: [
+              {
+                internalType: "enum ItemType",
+                name: "itemType",
+                type: "uint8",
+              },
+              {
+                internalType: "address",
+                name: "token",
+                type: "address",
+              },
+              {
+                internalType: "uint256",
+                name: "identifierOrCriteria",
+                type: "uint256",
+              },
+              {
+                internalType: "uint256",
+                name: "startAmount",
+                type: "uint256",
+              },
+              {
+                internalType: "uint256",
+                name: "endAmount",
+                type: "uint256",
+              },
+            ],
+            internalType: "struct OfferItem[]",
+            name: "offer",
+            type: "tuple[]",
+          },
+          {
+            components: [
+              {
+                internalType: "enum ItemType",
+                name: "itemType",
+                type: "uint8",
+              },
+              {
+                internalType: "address",
+                name: "token",
+                type: "address",
+              },
+              {
+                internalType: "uint256",
+                name: "identifierOrCriteria",
+                type: "uint256",
+              },
+              {
+                internalType: "uint256",
+                name: "startAmount",
+                type: "uint256",
+              },
+              {
+                internalType: "uint256",
+                name: "endAmount",
+                type: "uint256",
+              },
+              {
+                internalType: "address payable",
+                name: "recipient",
+                type: "address",
+              },
+            ],
+            internalType: "struct ConsiderationItem[]",
+            name: "consideration",
+            type: "tuple[]",
+          },
+          {
+            internalType: "enum OrderType",
+            name: "orderType",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
+            name: "startTime",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "endTime",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes32",
+            name: "zoneHash",
+            type: "bytes32",
+          },
+          {
+            internalType: "uint256",
+            name: "salt",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes32",
+            name: "conduitKey",
+            type: "bytes32",
+          },
+          {
+            internalType: "uint256",
+            name: "totalOriginalConsiderationItems",
+            type: "uint256",
+          },
+        ],
+        indexed: false,
+        internalType: "struct OrderParameters",
+        name: "orderParameters",
+        type: "tuple",
       },
     ],
     name: "OrderValidated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "bytes32[]",
+        name: "orderHashes",
+        type: "bytes32[]",
+      },
+    ],
+    name: "OrdersMatched",
     type: "event",
   },
   {
@@ -1686,6 +1891,25 @@ const SeaportABI = [
     inputs: [
       {
         internalType: "address",
+        name: "contractOfferer",
+        type: "address",
+      },
+    ],
+    name: "getContractOffererNonce",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "nonce",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "offerer",
         type: "address",
       },
@@ -2053,7 +2277,7 @@ const SeaportABI = [
           },
         ],
         internalType: "struct AdvancedOrder[]",
-        name: "advancedOrders",
+        name: "orders",
         type: "tuple[]",
       },
       {
@@ -2128,6 +2352,11 @@ const SeaportABI = [
         internalType: "struct Fulfillment[]",
         name: "fulfillments",
         type: "tuple[]",
+      },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
       },
     ],
     name: "matchAdvancedOrders",
@@ -2427,7 +2656,7 @@ const SeaportABI = [
         type: "string",
       },
     ],
-    stateMutability: "pure",
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -2577,6 +2806,10 @@ const SeaportABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    stateMutability: "payable",
+    type: "receive",
+  },
 ];
 
-export { SeaportABI };
+export { SeaportABIv14 };

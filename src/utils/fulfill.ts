@@ -11,7 +11,7 @@ import type {
   Seaport,
   FulfillmentComponentStruct,
   OrderStruct,
-} from "../typechain/Seaport";
+} from "../typechain-types/seaport_v1_4/contracts/Seaport";
 import { BasicOrderRouteType, ItemType, NO_CONDUIT } from "../constants";
 import type {
   AdvancedOrder,
@@ -178,36 +178,35 @@ const offerAndConsiderationFulfillmentMapping: {
   },
 } as const;
 
-export async function fulfillBasicOrder({
-  order,
-  seaportContract,
-  offererBalancesAndApprovals,
-  fulfillerBalancesAndApprovals,
-  timeBasedItemParams,
-  offererOperator,
-  fulfillerOperator,
-  signer,
-  tips = [],
-  conduitKey = NO_CONDUIT,
-  domain,
-}: {
-  order: Order;
-  seaportContract: Seaport;
-  offererBalancesAndApprovals: BalancesAndApprovals;
-  fulfillerBalancesAndApprovals: BalancesAndApprovals;
-  timeBasedItemParams: TimeBasedItemParams;
-  offererOperator: string;
-  fulfillerOperator: string;
-  signer: Signer;
-  tips?: ConsiderationItem[];
-  conduitKey: string;
-  domain?: string;
-}): Promise<
-  OrderUseCase<
-    ExchangeAction<
-      ContractMethodReturnType<SeaportContract, "fulfillBasicOrder">
-    >
-  >
+export function fulfillBasicOrder(
+  {
+    order,
+    seaportContract,
+    offererBalancesAndApprovals,
+    fulfillerBalancesAndApprovals,
+    timeBasedItemParams,
+    offererOperator,
+    fulfillerOperator,
+    signer,
+    tips = [],
+    conduitKey = NO_CONDUIT,
+    domain,
+  }: {
+    order: Order;
+    seaportContract: Seaport;
+    offererBalancesAndApprovals: BalancesAndApprovals;
+    fulfillerBalancesAndApprovals: BalancesAndApprovals;
+    timeBasedItemParams: TimeBasedItemParams;
+    offererOperator: string;
+    fulfillerOperator: string;
+    signer: Signer;
+    tips?: ConsiderationItem[];
+    conduitKey: string;
+    domain?: string;
+  },
+  exactApproval: boolean
+): OrderUseCase<
+  ExchangeAction<ContractMethodReturnType<SeaportContract, "fulfillBasicOrder">>
 > {
   const { offer, consideration } = order.parameters;
   const considerationIncludingTips = [...consideration, ...tips];
@@ -284,8 +283,9 @@ export async function fulfillBasicOrder({
 
   const payableOverrides = { value: totalNativeAmount };
 
-  const approvalActions = await getApprovalActions(
+  const approvalActions = getApprovalActions(
     insufficientApprovals,
+    exactApproval,
     signer
   );
 
@@ -308,51 +308,52 @@ export async function fulfillBasicOrder({
   };
 }
 
-export async function fulfillStandardOrder({
-  order,
-  unitsToFill = 0,
-  totalSize,
-  totalFilled,
-  offerCriteria,
-  considerationCriteria,
-  tips = [],
-  extraData,
-  seaportContract,
-  offererBalancesAndApprovals,
-  fulfillerBalancesAndApprovals,
-  offererOperator,
-  fulfillerOperator,
-  timeBasedItemParams,
-  conduitKey,
-  recipientAddress,
-  signer,
-  domain,
-}: {
-  order: Order;
-  unitsToFill?: BigNumberish;
-  totalFilled: BigNumber;
-  totalSize: BigNumber;
-  offerCriteria: InputCriteria[];
-  considerationCriteria: InputCriteria[];
-  tips?: ConsiderationItem[];
-  extraData?: string;
-  seaportContract: Seaport;
-  offererBalancesAndApprovals: BalancesAndApprovals;
-  fulfillerBalancesAndApprovals: BalancesAndApprovals;
-  offererOperator: string;
-  fulfillerOperator: string;
-  conduitKey: string;
-  recipientAddress: string;
-  timeBasedItemParams: TimeBasedItemParams;
-  signer: Signer;
-  domain?: string;
-}): Promise<
-  OrderUseCase<
-    ExchangeAction<
-      ContractMethodReturnType<
-        SeaportContract,
-        "fulfillAdvancedOrder" | "fulfillOrder"
-      >
+export function fulfillStandardOrder(
+  {
+    order,
+    unitsToFill = 0,
+    totalSize,
+    totalFilled,
+    offerCriteria,
+    considerationCriteria,
+    tips = [],
+    extraData,
+    seaportContract,
+    offererBalancesAndApprovals,
+    fulfillerBalancesAndApprovals,
+    offererOperator,
+    fulfillerOperator,
+    timeBasedItemParams,
+    conduitKey,
+    recipientAddress,
+    signer,
+    domain,
+  }: {
+    order: Order;
+    unitsToFill?: BigNumberish;
+    totalFilled: BigNumber;
+    totalSize: BigNumber;
+    offerCriteria: InputCriteria[];
+    considerationCriteria: InputCriteria[];
+    tips?: ConsiderationItem[];
+    extraData?: string;
+    seaportContract: Seaport;
+    offererBalancesAndApprovals: BalancesAndApprovals;
+    fulfillerBalancesAndApprovals: BalancesAndApprovals;
+    offererOperator: string;
+    fulfillerOperator: string;
+    conduitKey: string;
+    recipientAddress: string;
+    timeBasedItemParams: TimeBasedItemParams;
+    signer: Signer;
+    domain?: string;
+  },
+  exactApproval: boolean
+): OrderUseCase<
+  ExchangeAction<
+    ContractMethodReturnType<
+      SeaportContract,
+      "fulfillAdvancedOrder" | "fulfillOrder"
     >
   >
 > {
@@ -361,7 +362,6 @@ export async function fulfillStandardOrder({
   const orderWithAdjustedFills = unitsToFill
     ? mapOrderAmountsFromUnitsToFill(order, {
         unitsToFill,
-        totalFilled,
         totalSize,
       })
     : // Else, we adjust the order by the remaining order left to be fulfilled
@@ -419,8 +419,9 @@ export async function fulfillStandardOrder({
 
   const payableOverrides = { value: totalNativeAmount };
 
-  const approvalActions = await getApprovalActions(
+  const approvalActions = getApprovalActions(
     insufficientApprovals,
+    exactApproval,
     signer
   );
 
@@ -519,7 +520,7 @@ export type FulfillOrdersMetadata = {
   offererOperator: string;
 }[];
 
-export async function fulfillAvailableOrders({
+export function fulfillAvailableOrders({
   ordersMetadata,
   seaportContract,
   fulfillerBalancesAndApprovals,
@@ -529,6 +530,7 @@ export async function fulfillAvailableOrders({
   conduitKey,
   signer,
   recipientAddress,
+  exactApproval,
   domain,
 }: {
   ordersMetadata: FulfillOrdersMetadata;
@@ -540,15 +542,11 @@ export async function fulfillAvailableOrders({
   conduitKey: string;
   signer: Signer;
   recipientAddress: string;
+  exactApproval: boolean;
   domain?: string;
-}): Promise<
-  OrderUseCase<
-    ExchangeAction<
-      ContractMethodReturnType<
-        SeaportContract,
-        "fulfillAvailableAdvancedOrders"
-      >
-    >
+}): OrderUseCase<
+  ExchangeAction<
+    ContractMethodReturnType<SeaportContract, "fulfillAvailableAdvancedOrders">
   >
 > {
   const sanitizedOrdersMetadata = ordersMetadata.map((orderMetadata) => ({
@@ -567,7 +565,6 @@ export async function fulfillAvailableOrders({
       order: orderMetadata.unitsToFill
         ? mapOrderAmountsFromUnitsToFill(orderMetadata.order, {
             unitsToFill: orderMetadata.unitsToFill,
-            totalFilled: orderMetadata.orderStatus.totalFilled,
             totalSize: orderMetadata.orderStatus.totalSize,
           })
         : // Else, we adjust the order by the remaining order left to be fulfilled
@@ -580,7 +577,15 @@ export async function fulfillAvailableOrders({
 
   let totalNativeAmount = BigNumber.from(0);
   const totalInsufficientApprovals: InsufficientApprovals = [];
-  const hasCriteriaItems = false;
+  const criteriaOffersAndConsiderations = sanitizedOrdersMetadata
+    .flatMap((orderMetadata) => [
+      orderMetadata.order.parameters.offer,
+      orderMetadata.order.parameters.consideration,
+    ])
+    .flat()
+    .filter(({ itemType }) => isCriteriaItem(itemType));
+
+  const hasCriteriaItems = criteriaOffersAndConsiderations.length > 0;
 
   const addApprovalIfNeeded = (
     orderInsufficientApprovals: InsufficientApprovals
@@ -663,8 +668,9 @@ export async function fulfillAvailableOrders({
 
   const payableOverrides = { value: totalNativeAmount };
 
-  const approvalActions = await getApprovalActions(
+  const approvalActions = getApprovalActions(
     totalInsufficientApprovals,
+    exactApproval,
     signer
   );
 
@@ -715,8 +721,8 @@ export async function fulfillAvailableOrders({
               ),
             })
           : [],
-        offerFulfillments,
-        considerationFulfillments,
+        offerFulfillments as any,
+        considerationFulfillments as any,
         conduitKey,
         recipientAddress,
         advancedOrdersWithTips.length,
@@ -781,9 +787,9 @@ export function generateFulfillOrdersFulfillments(
         })}${isErc721Item(item.itemType) ? itemIndex : ""}`;
 
         offerAggregatedFulfillments[aggregateKey] = [
-          ...(offerAggregatedFulfillments[aggregateKey] ?? []),
+          ...((offerAggregatedFulfillments[aggregateKey] ?? []) as any),
           { orderIndex, itemIndex },
-        ];
+        ] as any;
       });
     }
   );
@@ -805,9 +811,10 @@ export function generateFulfillOrdersFulfillments(
           })}${isErc721Item(item.itemType) ? itemIndex : ""}`;
 
           considerationAggregatedFulfillments[aggregateKey] = [
-            ...(considerationAggregatedFulfillments[aggregateKey] ?? []),
+            ...((considerationAggregatedFulfillments[aggregateKey] ??
+              []) as any),
             { orderIndex, itemIndex },
-          ];
+          ] as any;
         }
       );
     }

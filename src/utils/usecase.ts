@@ -2,6 +2,7 @@ import { CallOverrides, Contract, Overrides, PayableOverrides } from "ethers";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 
 import {
+  CreateBulkOrdersAction,
   CreateOrderAction,
   ExchangeAction,
   OrderUseCase,
@@ -10,7 +11,7 @@ import {
 } from "../types";
 
 export const executeAllActions = async <
-  T extends CreateOrderAction | ExchangeAction
+  T extends CreateOrderAction | CreateBulkOrdersAction | ExchangeAction
 >(
   actions: OrderUseCase<T>["actions"]
 ) => {
@@ -24,9 +25,14 @@ export const executeAllActions = async <
 
   const finalAction = actions[actions.length - 1] as T;
 
-  return finalAction.type === "create"
-    ? await finalAction.createOrder()
-    : await finalAction.transactionMethods.transact();
+  switch (finalAction.type) {
+    case "create":
+      return finalAction.createOrder();
+    case "createBulk":
+      return finalAction.createBulkOrders();
+    default:
+      return finalAction.transactionMethods.transact();
+  }
 };
 
 const instanceOfOverrides = <
@@ -62,7 +68,7 @@ export const getTransactionMethods = <
   contract: T,
   method: U,
   args: Parameters<T["functions"][U]>,
-  domain: string = ""
+  domain?: string
 ): TransactionMethods<ContractMethodReturnType<T, U>> => {
   const lastArg = args[args.length - 1];
 
@@ -79,9 +85,11 @@ export const getTransactionMethods = <
       method as string
     ](...[...args, mergedOverrides]);
 
-    const tag = getTagFromDomain(domain);
+    if (domain) {
+      const tag = getTagFromDomain(domain);
+      populatedTransaction.data = populatedTransaction.data + tag;
+    }
 
-    populatedTransaction.data = populatedTransaction.data + tag;
     return populatedTransaction;
   };
 

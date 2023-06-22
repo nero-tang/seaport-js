@@ -1,8 +1,8 @@
-import type { DomainRegistry as TypeChainDomainRegistryContract } from "./typechain/DomainRegistry";
+import type { DomainRegistry as TypeChainDomainRegistryContract } from "./typechain-types";
 import type {
   OrderStruct,
   Seaport as TypeChainSeaportContract,
-} from "./typechain/Seaport";
+} from "./typechain-types/seaport_v1_4/contracts/Seaport";
 import {
   BigNumber,
   BigNumberish,
@@ -15,8 +15,7 @@ import {
   PopulatedTransaction,
 } from "ethers";
 import { ItemType, OrderType } from "./constants";
-import type { ERC721 } from "./typechain/ERC721";
-import type { ERC20 } from "./typechain/ERC20";
+import type { TestERC20, TestERC721 } from "./typechain-types";
 
 export type SeaportConfig = {
   // Used because fulfillments may be invalid if confirmations take too long. Default buffer is 5 minutes
@@ -27,6 +26,9 @@ export type SeaportConfig = {
 
   // A mapping of conduit key to conduit
   conduitKeyToConduit?: Record<string, string>;
+
+  // The Seaport version to use
+  seaportVersion?: "1.4" | "1.5";
 
   overrides?: {
     contractAddress?: string;
@@ -91,7 +93,7 @@ export type OrderParameters = {
   conduitKey: string;
 };
 
-export type OrderComponents = OrderParameters & { counter: number };
+export type OrderComponents = OrderParameters & { counter: BigNumberish };
 
 export type Order = {
   parameters: OrderParameters;
@@ -113,11 +115,10 @@ export type BasicErc721Item = {
 export type Erc721ItemWithCriteria = {
   itemType: ItemType.ERC721;
   token: string;
-  identifiers: string[];
-  // Used for criteria based items i.e. offering to buy 5 NFTs for a collection
   amount?: string;
   endAmount?: string;
-};
+  // Used for criteria based items i.e. offering to buy 5 NFTs for a collection
+} & ({ identifiers: string[] } | { criteria: string });
 
 type Erc721Item = BasicErc721Item | Erc721ItemWithCriteria;
 
@@ -132,10 +133,9 @@ export type BasicErc1155Item = {
 export type Erc1155ItemWithCriteria = {
   itemType: ItemType.ERC1155;
   token: string;
-  identifiers: string[];
   amount: string;
   endAmount?: string;
-};
+} & ({ identifiers: string[] } | { criteria: string });
 
 type Erc1155Item = BasicErc1155Item | Erc1155ItemWithCriteria;
 
@@ -159,17 +159,16 @@ export type Fee = {
 export type CreateOrderInput = {
   conduitKey?: string;
   zone?: string;
-  startTime?: string;
-  endTime?: string;
+  startTime?: BigNumberish;
+  endTime?: BigNumberish;
   offer: readonly CreateInputItem[];
   consideration: readonly ConsiderationInputItem[];
-  counter?: number;
+  counter?: BigNumberish;
   fees?: readonly Fee[];
   allowPartialFills?: boolean;
   restrictedByZone?: boolean;
-  useProxy?: boolean;
   domain?: string;
-  salt?: string;
+  salt?: BigNumberish;
 };
 
 export type InputCriteria = {
@@ -209,8 +208,10 @@ export type ApprovalAction = {
   itemType: ItemType;
   operator: string;
   transactionMethods:
-    | TransactionMethods<ContractMethodReturnType<ERC721, "setApprovalForAll">>
-    | TransactionMethods<ContractMethodReturnType<ERC20, "approve">>;
+    | TransactionMethods<
+        ContractMethodReturnType<TestERC721, "setApprovalForAll">
+      >
+    | TransactionMethods<ContractMethodReturnType<TestERC20, "approve">>;
 };
 
 export type ExchangeAction<T = unknown> = {
@@ -224,6 +225,12 @@ export type CreateOrderAction = {
   createOrder: () => Promise<OrderWithCounter>;
 };
 
+export type CreateBulkOrdersAction = {
+  type: "createBulk";
+  getMessageToSign: () => Promise<string>;
+  createBulkOrders: () => Promise<OrderWithCounter[]>;
+};
+
 export type TransactionAction = ApprovalAction | ExchangeAction;
 
 export type CreateOrderActions = readonly [
@@ -231,17 +238,30 @@ export type CreateOrderActions = readonly [
   CreateOrderAction
 ];
 
+export type CreateBulkOrdersActions = readonly [
+  ...ApprovalAction[],
+  CreateBulkOrdersAction
+];
+
 export type OrderExchangeActions<T> = readonly [
   ...ApprovalAction[],
   ExchangeAction<T>
 ];
 
-export type OrderUseCase<T extends CreateOrderAction | ExchangeAction> = {
+export type OrderUseCase<
+  T extends CreateOrderAction | CreateBulkOrdersAction | ExchangeAction
+> = {
   actions: T extends CreateOrderAction
     ? CreateOrderActions
+    : T extends CreateBulkOrdersAction
+    ? CreateBulkOrdersActions
     : OrderExchangeActions<T extends ExchangeAction<infer U> ? U : never>;
   executeAllActions: () => Promise<
-    T extends CreateOrderAction ? OrderWithCounter : ContractTransaction
+    T extends CreateOrderAction
+      ? OrderWithCounter
+      : T extends CreateBulkOrdersAction
+      ? OrderWithCounter[]
+      : ContractTransaction
   >;
 };
 
@@ -303,7 +323,7 @@ export type SeaportContract = TypeChainSeaportContract & {
     ): Promise<BigNumber>;
   };
 
-  populateTranscation: TypeChainSeaportContract["populateTransaction"] & {
+  populateTransaction: TypeChainSeaportContract["populateTransaction"] & {
     matchOrders(
       orders: OrderStruct[],
       fulfillments: MatchOrdersFulfillment[],

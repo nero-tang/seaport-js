@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./img/banner.png" />
+</p>
+
 [![Version][version-badge]][version-link]
 [![npm][npm-badge]][npm-link]
 [![Test CI][ci-badge]][ci-link]
@@ -158,7 +162,7 @@ const transaction = executeAllFulfillActions();
 
 ## Contributing
 
-See [the contributing guide](CONTRIBUTING.md) for detailed instructions on how to get started with this project.
+See [the contributing guide](./.github/CONTRIBUTING.md) for detailed instructions on how to get started with this project.
 
 ## License
 
